@@ -1,0 +1,40 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: main
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar sintaxis de JavaScript
+        shell: bash
+        run: find src -type f -name '*.js' -print0 | xargs -0 -r -n1 node --check
+
+      - name: Desplegar en Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        shell: bash
+        run: |
+          if [[ -z "$RENDER_DEPLOY_HOOK_URL" ]]; then
+            echo "Falta configurar el secreto RENDER_DEPLOY_HOOK_URL en GitHub."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
