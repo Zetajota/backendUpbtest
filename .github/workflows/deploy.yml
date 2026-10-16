@@ -28,13 +28,14 @@ jobs:
         run: find src -type f -name '*.js' -print0 | xargs -0 -r -n1 node --check
 
       - name: Desplegar en Render
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         shell: bash
         run: |
-          if [[ -z "$RENDER_DEPLOY_HOOK_URL" ]]; then
-            echo "Falta configurar el secreto RENDER_DEPLOY_HOOK_URL en GitHub."
-            exit 1
-          fi
-
           curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
+
+      - name: Omitir despliegue sin secreto
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
+        shell: bash
+        run: echo "::warning::No se ejecutó el despliegue porque falta el secreto RENDER_DEPLOY_HOOK_URL."
